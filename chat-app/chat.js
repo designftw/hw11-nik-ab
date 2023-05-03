@@ -36,6 +36,10 @@ const app = {
       editID: '',
       editText: '',
       recipient: '',
+      maxMessages: 10,
+      numberOfMessages: 0,
+
+      deleteId: '',
       //////////////////////////////
       // Problem 1 solution
       preferredUsername: '',
@@ -128,13 +132,13 @@ const app = {
             m.actor == this.recipient
           ))
       }
-
+      this.numberOfMessages = messages.length; 
       return messages
         // Sort the messages with the
         // most recently created ones first
         .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
         // Only show the 10 most recent ones
-        .slice(0,50)
+        .slice(0,this.maxMessages)
     },
 
     messagesWithAttachments() {
@@ -146,6 +150,18 @@ const app = {
   },
 
   methods: {
+    getDate(dateString){
+      const date = new Date(Date.parse(dateString));
+      return `${date.getHours()}:${date.getMinutes()}`;
+    },
+    onscroll(event){
+      const {scrollHeight, scrollTop, clientHeight} = event.target;
+
+      if (Math.abs(scrollHeight - clientHeight - scrollTop) < 1) {
+          if(this.maxMessages < this.numberOfMessages)
+          this.maxMessages += 10;
+      }
+    },
     async sendMessage() {
       const message = {
         type: 'Note',
@@ -178,7 +194,9 @@ const app = {
     removeMessage(message) {
       this.$gf.remove(message)
     },
-
+    deleteButton(message){
+      this.deleteId = message.id;
+    },
     startEditMessage(message) {
       // Mark which message we're editing
       this.editID = message.id
@@ -405,7 +423,6 @@ const Replies = {
         inReplyTo: this.messageid,
         context: [this.messageid]
       });
-      console.log('posted!');
       this.replyText = ''
     }
   },
@@ -425,7 +442,6 @@ const ProfilePicture = {
   },
   watch:{
     async profile(profile){
-      console.log(profile.icon.magnet);
       this.imageUrl = URL.createObjectURL( await this.$gf.media.fetch(profile.icon.magnet));
     }
   },

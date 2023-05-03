@@ -201,3 +201,7 @@ details{
     border-radius: 25px;
     border: 1px gray solid;
 }
+#messageList{
+    overflow-y:auto;
+    max-height: 50vh;
+}
