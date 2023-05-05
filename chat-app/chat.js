@@ -11,18 +11,16 @@ const app = {
   created() {
     this.resolver = new Resolver(this.$gf)
   },
-
   setup() {
     // Initialize the name of the channel we're chatting in
-    const channel = Vue.ref('my-channel-nika')
+    const channel = Vue.ref('my-channel-nika');
 
     // And a flag for whether or not we're private-messaging
-    const privateMessaging = Vue.ref(false)
-
+    const privateMessaging = Vue.ref(false);
     // If we're private messaging use "me" as the channel,
     // otherwise use the channel value
     const $gf = Vue.inject('graffiti')
-    const context = Vue.computed(()=> privateMessaging.value? [$gf.me] : [channel.value])
+    const context = Vue.computed(()=> privateMessaging.value? [$gf.me] : [channel.value]);
 
     // Initialize the collection of messages associated with the context
     const { objects: messagesRaw } = $gf.useObjects(context)
@@ -39,7 +37,11 @@ const app = {
       maxMessages: 10,
       numberOfMessages: 0,
 
+      editProfile: false,
+      editUsername: false,
+      
       deleteId: '',
+      show : false,
       //////////////////////////////
       // Problem 1 solution
       preferredUsername: '',
@@ -52,8 +54,6 @@ const app = {
       //////////////////////////////
       //////////////////////////////
       // Problem 3 solution
-      myUsername: '',
-      actorsToUsernames: {},
       /////////////////////////////
       imageDownloads: {},
 
@@ -64,17 +64,25 @@ const app = {
   // Problem 3 solution
   watch: {
     '$gf.me': async function(me) {
-      this.myUsername = await this.resolver.actorToUsername(me)
+      let userName;
+      userName = await this.resolver.actorToUsername(me);
+      if(userName)
+        this.$actorsToUsernames.value[me] = userName;
     },
-
     async messages(messages) {
       for (const m of messages) {
-        if (!(m.actor in this.actorsToUsernames)) {
-          this.actorsToUsernames[m.actor] = await this.resolver.actorToUsername(m.actor)
-        }
-        if (m.bto && m.bto.length && !(m.bto[0] in this.actorsToUsernames)) {
-          this.actorsToUsernames[m.bto[0]] = await this.resolver.actorToUsername(m.bto[0])
-        }
+          if (!(m.actor in this.$actorsToUsernames.value)) {
+            let userName;
+            userName = await this.resolver.actorToUsername(m.actor);
+            if(userName)
+              this.$actorsToUsernames.value[m.actor] = userName;
+          }
+          if (m.bto && m.bto.length && !(m.bto[0] in this.$actorsToUsernames.value)) {
+            let userName;
+            userName = await this.resolver.actorToUsername(m.bto[0]);
+            if(userName)
+              this.$actorsToUsernames.value[m.bto[0]] =userName;
+          }
         this.$gf.post(
         {
           type: 'Read',
@@ -103,6 +111,12 @@ const app = {
   /////////////////////////////
 
   computed: {
+    myUsername(){
+      return this.$actorsToUsernames.value[this.$gf.me];
+    },
+    actorsToUsernames(){
+      return this.$actorsToUsernames.value;
+    },
     messages() {
       let messages = this.messagesRaw
         // Filter the "raw" messages for data
@@ -138,7 +152,7 @@ const app = {
         // most recently created ones first
         .sort((m1, m2)=> new Date(m2.published) - new Date(m1.published))
         // Only show the 10 most recent ones
-        .slice(0,this.maxMessages)
+        .slice(0,this.maxMessages);
     },
 
     messagesWithAttachments() {
@@ -152,12 +166,27 @@ const app = {
   methods: {
     getDate(dateString){
       const date = new Date(Date.parse(dateString));
-      return `${date.getHours()}:${date.getMinutes()}`;
+      const now = new Date(Date.now());
+
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+      const daysAgo = Math.floor((Date.now() - date.getTime())/(24*60*60*1000)) 
+                      - (now.getHours() < hours ||
+                         now.getHours() === hours &&
+                         now.getMinutes() < minutes) ? 1: 0;
+                         
+      const time = `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0'+minutes : minutes}`;
+      if(daysAgo === 0) return time;
+      if(daysAgo === 1) return "Yesterday " + time;
+      if(daysAgo < 7) return date.getDay() + ' ' + time;
+      const dateWithoutYear = date.getDate() +' '+ date.getMonth() + time;
+      if(now.getFullYear === date.getFullYear) return dateWithoutYear;
+      return date.getFullYear() + dateWithoutYear;
     },
     onscroll(event){
       const {scrollHeight, scrollTop, clientHeight} = event.target;
-
-      if (Math.abs(scrollHeight - clientHeight - scrollTop) < 1) {
+      console.log("whee", Math.abs(scrollHeight + scrollTop - clientHeight) );
+      if (Math.abs(scrollHeight + scrollTop - clientHeight) <= 2) {
           if(this.maxMessages < this.numberOfMessages)
           this.maxMessages += 10;
       }
@@ -239,6 +268,7 @@ const app = {
   }
 }
 
+
 const Name = {
   props: ['actor', 'editable'],
 
@@ -313,7 +343,6 @@ const Like = {
     const { objects: likesRaw } = $gf.useObjects([messageid])
     return { likesRaw }
   },
-
   computed: {
     likes() {
       return this.likesRaw.filter(l=>
@@ -349,7 +378,7 @@ const Like = {
 }
 
 const ReadReceipts = {
-  props: ['messageid', 'actorsToUsernames'],
+  props: ['messageid', 'private'],
 
   setup(props) {
     const $gf = Vue.inject('graffiti')
@@ -363,11 +392,17 @@ const ReadReceipts = {
   watch:{
     async readActors(newReadActors){
       for (const r of newReadActors) {
-        if (!(r.actor in this.actorsToUsernames)) {
-          this.actorsToUsernames[r.actor] = await this.resolver.actorToUsername(r.actor)
+        if (!(r.actor in this.$actorsToUsernames.value)) {
+          let userName;
+          userName = await this.resolver.actorToUsername(r.actor);
+          if(userName)
+            this.$actorsToUsernames.value[r.actor] = userName;
         }
-        if (r.bto && r.bto.length && !(r.bto[0] in this.actorsToUsernames)) {
-          this.actorsToUsernames[r.bto[0]] = await this.resolver.actorToUsername(r.bto[0])
+        if (r.bto && r.bto.length && !(r.bto[0] in this.$actorsToUsernames.value)) {
+          let userName;
+          userName = await this.resolver.actorToUsername(r.bto[0]);
+          if(userName)
+          this.$actorsToUsernames.value[r.bto[0]] = userName;
         }
       }
     }
@@ -376,15 +411,15 @@ const ReadReceipts = {
     reads() {
       return this.readsRaw.filter(r=>
         r.type == 'Read' &&
-        r.object == this.messageid)
+        r.object == this.messageid &&
+        r.actor !== this.$gf.me)
     },
     readActors() {
       // Unique number of actors
       return [...new Set(this.reads.map(r=>r.actor))];
     },
     readUsernames(){
-      return this.readActors.filter((actor)=>actor in this.actorsToUsernames)
-                            .map((actor) => this.actorsToUsernames[actor]);
+      return this.readActors.map((actor) => this.$actorsToUsernames.value[actor] ?? '');
     }
   },
   template: '#read_receipts',
@@ -394,9 +429,14 @@ const ReadReceipts = {
 
 const Replies = {
   props: ["messageid"],
+  
+  created() {
+    this.resolver = new Resolver(this.$gf)
+  },
   data() {
     return {
-      replyText: ''
+      replyText: '',
+      viewReplies: false,
     }
   },
   setup(props) {
@@ -405,17 +445,43 @@ const Replies = {
     const { objects: repliesRaw } = $gf.useObjects([messageid])
     return { repliesRaw }
   },
-
+  watch:{
+    
+    async replies(replies) {
+      for (const r of replies) {
+        if (!(r.actor in this.$actorsToUsernames.value)) {
+          let userName;
+          userName = await this.resolver.actorToUsername(r.actor);
+          if(userName)
+            this.$actorsToUsernames.value[r.actor] = userName;
+        }
+        if (r.bto && r.bto.length && !(r.bto[0] in this.$actorsToUsernames.value)) {
+          let userName;
+          userName = await this.resolver.actorToUsername(r.bto[0]);
+          if(userName)
+          this.$actorsToUsernames.value[r.bto[0]]= userName;
+        }
+      }
+    }
+  },
   computed: {
+    actorsToUsernames(){
+      return this.$actorsToUsernames.value;
+    },
     replies() {
       return this.repliesRaw.filter(r=>
         r.type == 'Note' &&
+        r.content &&
         r.inReplyTo == this.messageid)
     },
 
   },
 
   methods: {
+    toggleReplies(){
+      if(this.viewReplies) this.viewReplies = false;
+      else this.viewReplies = true;
+    },
     sendReply() {
       this.$gf.post({
         type: 'Note',
@@ -424,8 +490,10 @@ const Replies = {
         context: [this.messageid]
       });
       this.replyText = ''
+      this.viewReplies = true;
     }
   },
+  components: {Name},
 
   template: '#replies'
 }
@@ -442,7 +510,15 @@ const ProfilePicture = {
   },
   watch:{
     async profile(profile){
-      this.imageUrl = URL.createObjectURL( await this.$gf.media.fetch(profile.icon.magnet));
+      let blob
+      try {
+        blob = await this.$gf.media.fetch(profile.icon.magnet)
+      } catch(e) {
+        this.imageUrl= "error"
+      }
+      try{this.imageUrl = URL.createObjectURL(blob)}
+      catch{this.imageUrl = "error"}
+
     }
   },
 
@@ -457,11 +533,12 @@ const ProfilePicture = {
           // Is the value of that property 'Profile'?
           m.type=='Profile' &&
           // Does the message have an icon property?
-          m.icon &&
+          m.icon&&
           // Does the icon have type Image and magnet of type string
-          m.icon.type =='Image' &&
-          m.icon.magnet && 
-          typeof m.icon.magnet == 'string')
+           m.icon.type =='Image' &&
+           m.icon.magnet && 
+           typeof m.icon.magnet == 'string'
+          )
         // Choose the most recent one or null if none exists
         .reduce((prev, curr)=> !prev || curr.published > prev.published? curr : prev, null)
     }
@@ -472,6 +549,7 @@ const ProfilePicture = {
       imageUrl: '',
       editing: false,
       file: '',
+      magnet: ''
     }
   },
 
@@ -482,7 +560,7 @@ const ProfilePicture = {
     },
 
     editImage() {
-      this.editing = true;
+      this.editing = !this.editing;
     },
 
     async saveImage() {
@@ -514,6 +592,8 @@ const ProfilePicture = {
 }
 
 app.components = { Name, Like, ReadReceipts, Replies, ProfilePicture }
-Vue.createApp(app)
-   .use(GraffitiPlugin(Vue))
-   .mount('#app')
+const vueApp = Vue.createApp(app)
+   .use(GraffitiPlugin(Vue));
+  vueApp.config.globalProperties.$actorsToUsernames = Vue.ref({});
+  vueApp.mount('#app');
+   
