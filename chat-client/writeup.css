@@ -1,0 +1,9 @@
+/* css for all of your write ups here */
+video{
+    width: 500px;
+}
+/* css for all of your write ups here */
+p{
+    max-width: 80ch;
+    line-height: 1.5;
+}
