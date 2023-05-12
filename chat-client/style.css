@@ -10,6 +10,21 @@
     min-height: 100vh;
     background-color: #dde1dd;
 }
+#not_logged_in{
+    flex-grow: 1;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+#log_in_screen{
+    display: flex;
+    font-size: xx-large;
+}
+#log_in_screen button{
+    font-size: xx-large;
+    margin-right: 1ch;
+}
 .profile_picture{
     max-width: 50px;
     min-width: 50px;

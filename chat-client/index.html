@@ -55,7 +55,7 @@
           <name :actor="$gf.me"></name>
         </div>
         <div class="my_username">@{{myUsername}}</div>
-        <button id="edit_profile_button" @click="editProfile = true">
+        <button v-if ="$gf.me" id="edit_profile_button" @click="editProfile = true">
           Edit Profile
         </button>
         <div>
@@ -447,6 +447,20 @@
             
             </div>
           </div>
+        </div>
+      </template>
+      <template v-else>
+        <div id = "not_logged_in">
+          <div id = "log_in_screen">
+            
+          <button  @click="$gf.toggleLogIn">
+            <!-- If we have a user ID, we're logged in so show "Log Out" -->
+            <!-- Otherwise, show "Log In" -->
+            {{ $gf.me? 'Log Out' : 'Log In' }}
+          </button>
+          <p>to start chatting!</p>
+          
+        </div>
         </div>
       </template>
     </div>

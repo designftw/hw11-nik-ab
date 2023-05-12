@@ -213,19 +213,21 @@ const app = {
     getDate(dateString){
       const date = new Date(Date.parse(dateString));
       const now = new Date(Date.now());
-
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const hours = date.getHours();
       const minutes = date.getMinutes();
       const daysAgo = Math.floor((Date.now() - date.getTime())/(24*60*60*1000)) 
-                      - (now.getHours() < hours ||
+                      - ((now.getHours() < hours ||
                          now.getHours() === hours &&
-                         now.getMinutes() < minutes) ? 1: 0;
+                         now.getMinutes() < minutes) ? 1: 0);
+      
                          
       const time = `${hours < 10 ? '0' + hours : hours}:${minutes < 10 ? '0'+minutes : minutes}`;
       if(daysAgo === 0) return time;
       if(daysAgo === 1) return "Yesterday " + time;
-      if(daysAgo < 7) return date.getDay() + ' ' + time;
-      const dateWithoutYear = date.getDate() +' '+ date.getMonth() + time;
+      if(daysAgo < 7) return days[date.getDay()] + ' ' + time;
+      const dateWithoutYear = date.getDate() +' '+ months[date.getMonth()]+' ' + time;
       if(now.getFullYear === date.getFullYear) return dateWithoutYear;
       return date.getFullYear() + dateWithoutYear;
     },
