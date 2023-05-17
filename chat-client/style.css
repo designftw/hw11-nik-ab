@@ -8,7 +8,7 @@
     flex-direction: column;
     max-height: 100vh;
     min-height: 100vh;
-    background-color: #dde1dd;
+    background-color: #eef2ee;
 }
 #not_logged_in{
     flex-grow: 1;
@@ -167,6 +167,9 @@ ul{
     line-height: 0.8;
     margin: 0.5em 0;
 }
+.no_button,.yes_button{
+    height: 100%;
+}
 .no_one_seen{
     font-size: small;
     width: max-content;
@@ -202,9 +205,6 @@ header{
 #sidebar{
     padding: 8px;
 }
-#rest{
-    padding: 8px;
-}
 #my_picture{
     margin-left: auto;
     margin-right: 8px;
@@ -216,7 +216,8 @@ header{
     display: none;
 }
 #mathjax_preview, .reply_mathjax_preview{
-    background-color: #c9cfc9;
+    background-color: hsl(120, 16%, 87%);
+    border: 1px solid #c9cfc9;
     margin-right: 24px;
     margin-top:4px;
     border-radius: 4px;
@@ -228,8 +229,7 @@ header{
     padding: 4px 16px;
 }
 #mathjax_preview_content, .reply_mathjax_preview_content{
-    border: 1px solid #c9cfc9;
-    background-color: #dde1dd;
+    background-color: #eef2ee;
     padding: 4px 16px;
     border-radius: 4px;
 }
@@ -260,13 +260,19 @@ header{
     
     
 }
-pre{  
-    white-space: pre-wrap;
+pre{ 
+    white-space: pre-line;
     word-wrap: break-word;
     line-break: anywhere;
     min-width: 1px;
 }
-
+.message_content_container{
+    padding-right: 8px;
+}
+.code_message:not(#xxxxx){
+    margin:0;
+    border-radius: 4px;
+}
 .edit_button, .delete_button{
     height:1.5em;
     width: 1.5em;
@@ -313,37 +319,97 @@ pre{
     justify-content: center;
     align-items: center;
 }
-#edit_latex_modal{
+.code_message:not(#haha){
+    font-size: 80%;
+}
+#edit_latex_modal, #edit_code_modal{
     display: flex;
     flex-direction: row;
 }
-#latex_textarea{
+#latex_textarea, #code_textarea{
     height: 100%;
     width: 100%;
     resize: none;
     overflow: hidden;
 }
+#code_input{
+    margin-left: 4px;
+}
 #latex_input{
+    width:50%;
+}
+#latex_input, #code_input{
     padding: 10px 4px;
-    width: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
 }
+#code_input{
+    max-width: 70%;
+    min-width: 70%;
+}
+#code_input textarea, #code_input pre{
+    box-sizing: border-box;
+}
+#code_settings{
+    flex-grow: 1;
+}
+
 #latex_preview_content{
     flex-grow: 1;
-
 }
-code{
+code:not(#xxxxx), code:not(#xxxxx) *{
     font-family: 'Source Code Pro', monospace;
 }
-#latex_textarea{
+#code_textarea{
+    border-radius: 8px;
+    border: 1px solid #c9cfc9;
+}
+
+#latex_textarea, #code_textarea{
     font-family: 'Source Code Pro', monospace;
     font-size: medium;
 }
+#code_input, #code_input *{
+    font-family: 'Source Code Pro', monospace;
+}
+.message_replies{
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+.message_replies:has(ul){
+    background-color: hsl(120, 6%, 90%);
+    border: 1px solid #c9cfc9;
+}
+#recipient_header{
+    padding-left: 8px;
+    align-items: center;
+    height: 70px;
+    background-color: hsl(200, 20%, 86%);
+    border-bottom: 1px solid #c9cfc9;
+}
+header{
+    box-shadow: 0px -3px 10px rgb(79, 98, 76);
+    z-index: 2;
+}
+#rest>ul, #rest>#input_row{
+    margin-left: 8px;
+    margin-right: 8px;
+}
+#input_row{
+    margin-bottom: 8px;
+}
+#recipient_header .message_name{
+    font-size: x-large;
+    margin-left: 0.5em;
+}
+#recipient_header .message_username{
+    font-size: x-large;
+}
 #latex_preview pre{
     
-    background-color: #c9cfc9;
+    background-color: #dde1dd;
     padding:4px;
     border-radius: 4px;
 }
@@ -353,7 +419,7 @@ code{
     display: flex;
     flex-direction: column;
     width: 50%;
-    border: 1px solid #c9cfc9;
+    border: 1px solid #a7ada7;
 }
 #latex_preview code{
     font-weight: 700;
@@ -366,7 +432,7 @@ code{
 }
 .delete_confirmation{
     padding: 0.2em 1em;
-    background: #dde1dd;
+    background: #eef2ee;
     border: 1px solid #c9cfc9;
 }
 img {
@@ -399,7 +465,10 @@ img {
    
    display:inline;
 }
-#edit_latex_modal{
+.message_content:has(.code_message){
+    padding: 0.1px;
+}
+#edit_latex_modal, #edit_code_modal{
     position: relative;
     background: #eef2ee;
     width: 75%;
@@ -495,17 +564,37 @@ input{
 .reply_input{
     flex-grow: 1;
 }
+.message_content:not(:has(.code_message)),.reply_content{
+    padding: 8px;
+}
 .message_content, .reply_content{
     border: 1px solid #c9cfc9;
-    background: #dde1dd;
-    padding: 4px;
+    background: hsl(120, 6%, 95%);
+    padding: 8px;
     border-radius: 4px;
     width: max-content;
+}
+.code_message:not(#aaa), #code_input pre:not(#aaa){
+    background: hsl(120, 6%, 95%);;
+}
+#code_settings{
+    display: flex;
+    flex-direction: column;
+}
+#language_selector{
+    font-size: medium;
+    margin-right: 4px;
+    margin-top: 4px;
+}
+#language_selector select{
+    border-radius: 4px;
 }
 #button_container{
     
     align-self: flex-end;
-    margin-top: 4px;
+    margin-top: auto;
+    margin-bottom: 8px;
+    padding-top: 4px;
 }
 #done_button, #cancel_button{
     width: max-content;
@@ -515,14 +604,19 @@ input{
 .reply_input{
     align-self: stretch;
 }
-.button_background{
-background-color: hsl(120, 16%, 76%);
-border-radius: 4px;
-padding: 4px;
-border: 1px solid #a5b8a5
+.button_background, .toolbar-item>button:not(#aaa){
+background-color: hsl(200, 36%, 70%);
+border: 1px solid hsl(200, 12%, 48%);
 }
-.button_background:not(#specificity_increase):active{
-    background-color: hsl(120, 16%, 66%);
+.toolbar-item>*{
+    
+border-radius: 4px;
+}
+.button_background{
+padding: 4px;
+}
+.button_background:not(#specificity_increase):active,  .toolbar-item:not(#aaa):active>button{
+    background-color: hsl(200, 26%, 59%);
 
 }
 #my_picture > .profile_picture_container{
@@ -552,7 +646,7 @@ border: 1px solid #a5b8a5
     position: absolute;
     bottom:100%;
     right:0%;
-    background-color: #c9cfc9;
+    background-color: #dde1dd;
     padding: 4px 8px;
     border-radius: 4px;
     border: 1px solid #eef2ee;
@@ -584,6 +678,10 @@ input[type = "submit"]{
 }
 #file+label, #file2+label{
     cursor:pointer;
+}
+.yes_button, .no_button{
+    padding-top: 0;
+    padding-bottom: 0;
 }
 #send_message{
     flex-grow: 1;
@@ -634,14 +732,14 @@ input[type = "submit"]{
 }
 .message_replies ul{
     padding-left: 4px;
-    border-left: 1px #c9cfc9 solid;
+    border-left: 2px #afb6af solid;
     margin: 0.2em 0;
 }
 .message_container{
     border-radius: 4px;
     margin-top: 4px;
     padding-bottom: 4px;
-    background-color: #eef2ee;
+    background-color: #dde1dd;
 }
 #edit_profile_button{
     margin: 0 8px;
@@ -667,6 +765,9 @@ button{
 }
 input[type="submit"]{
     font-size:medium;
+}
+ul+.number_seen{
+    cursor: pointer;
 }
 input[type="submit"]:hover{
     scale:1.1;
@@ -714,26 +815,21 @@ li.v-enter-active, li.v-leave-active{
 li.v-enter-from, li.v-leave-to{
     transform : scaleY(0);
 }
-.reply_list.v-enter-active, .reply_list.v-leave-active{
-    transform: scale(1);
-    transform-origin: top left;
-    transition: transform 0.2s ease;
-  }
+
 .yes_button{
-    padding:0 0.5em
+    padding-right: 0.5em;
+    padding-left: 0.5em;
 }
-.reply_list.v-enter-from, .reply_list.v-leave-to{
-    transform : scale(0);
-}
-.delete_button.v-enter-active{
-    transform: scale(1);
-    transform-origin: center center;
-    transition: 150ms;
-    transition-delay: 150ms;
+.reply_list.v-enter-active, .reply_list.v-leave-active{
+    transform: scaleY(1);
+    transform-origin: top center;
+    transition: all 0.2s ease;
   }
-  
-.delete_button.v-enter-from{
-    transform : scale(0);
+.reply_list.v-enter-from, .reply_list.v-leave-to{
+    transform : scaleY(0);
+}
+.delete_confirmation{
+    z-index: 2;
 }
 .insert-enter-active, .insert-leave-active{
     transform: scaleY(1);

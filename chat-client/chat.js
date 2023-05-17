@@ -2,7 +2,7 @@ import * as Vue from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
 import { mixin } from "https://mavue.mavo.io/mavue.js";
 import GraffitiPlugin from 'https://graffiti.garden/graffiti-js/plugins/vue/plugin.js'
 import Resolver from './resolver.js'
-
+//import {Prism} from './prism.js';
 const app = {
   // Import MaVue
   mixins: [mixin],
@@ -13,7 +13,7 @@ const app = {
   },
   setup() {
     // Initialize the name of the channel we're chatting in
-    const channel = Vue.ref('chat-app-demo');
+    const channel = Vue.ref('demo-demo-demo-demo');
 
     // And a flag for whether or not we're private-messaging
     const privateMessaging = Vue.ref(false);
@@ -40,7 +40,11 @@ const app = {
       editProfile: false,
       editLatex: false,
       editCode: false,
+      editingCode: false,
+      curEditMessage: null,
+      codeLanguage: 'none',
       latexInput: '\\(2 + 2 = 5\\)',
+      codeInput:'',
       editUsername: false,
       
       deleteId: '',
@@ -50,6 +54,7 @@ const app = {
       // Problem 1 solution
       preferredUsername: '',
       usernameResult: '',
+      searchFailed: false,
       //////////////////////////////
       //////////////////////////////
       // Problem 2 solution
@@ -74,6 +79,31 @@ const app = {
       if(userName)
         this.$actorsToUsernames.value[me] = userName;
     },
+    async codeLanguage(lang){
+      const editor = document.getElementById("code_textarea");
+      editor.setAttribute('lang', lang);
+    },
+    async editCode(editing){
+      this.$nextTick(()=>{
+      if(editing){
+        const editor = document.querySelector("#code_textarea");
+        if(this.editingCode) {
+          editor.update(this.curEditMessage.content);
+          this.codeInput = this.curEditMessage.content;
+          this.codeLanguage = this.curEditMessage.language;
+        }else{
+          editor.update(this.codeInput);
+        }
+        
+        document.getElementById("code_textarea").setAttribute('lang', this.codeLanguage);
+        editor.querySelector("textarea").focus();
+        //const codeInputChange = this.codeInputChange;
+        editor.addEventListener("input", (event)=>{
+            this.codeInput = event.target.value;
+        });
+      }
+    });
+    },
     async messageText(text){
        this.$nextTick(()=>
         MathJax.typeset([document.querySelector("#mathjax_preview_content")]));
@@ -84,6 +114,8 @@ const app = {
     },
     async messages(messages) {
       this.$nextTick(()=>MathJax.typeset(['.message_content']));
+      
+      this.$nextTick(()=>Prism.highlightAll());
       for (const m of messages) {
           if (!(m.actor in this.$actorsToUsernames.value)) {
             let userName;
@@ -97,12 +129,7 @@ const app = {
             if(userName)
               this.$actorsToUsernames.value[m.bto[0]] =userName;
           }
-        this.$gf.post(
-        {
-          type: 'Read',
-          object: m.id,
-          context: [ m.id ]
-        });
+  
       }
     },
 
@@ -143,7 +170,8 @@ const app = {
           // Does the message have a type property?
           m.type         &&
           // Is the value of that property 'Note'?
-          m.type=='Note' &&
+          (m.type=='Note' || m.type == 'Code') &&
+          
           // Does the message have a content property?
           (m.content || m.content == '') &&
           // Is that property a string?
@@ -181,6 +209,28 @@ const app = {
   },
 
   methods: {
+    codeInputChange(value){
+      this.codeInput = value;
+    },
+    async codeChange(event){
+      const code = event.target.value;
+      console.log(code);
+      const editor = document.getElementById("code_editor");
+      console.log(editor);
+      editor.innerHTML = code;
+      this.highlightCode(["#code_editor"]);
+    },
+    highlightCode(arr){
+      for (const selector of arr){
+        if(typeof selector == 'string'){
+          const elements = document.querySelectorAll(selector);
+          for(const element of elements){
+            Prism.highlightElement(element);
+          }
+        }
+        else Prism.highlightElement(selector);
+      }
+    },
     renderLatex(text){
       this.$nextTick(()=>{
         const pre = document.querySelector("#latex_preview_content");
@@ -191,11 +241,17 @@ const app = {
         );
     },
     math(){
-      MathJax.typeset();
+      console.log("hi");
     },
     startLatexEdit(){
       this.editLatex =true;
+      if(this.messageText.length)
+      this.latexInput = this.messageText + " \\(\\)";
+      else this.latexInput = "\\(\\)"
+      
       this.renderLatex(this.latexInput);
+      this.$nextTick(()=>document.getElementById("latex_textarea").
+      setSelectionRange(this.latexInput.length-2,this.latexInput.length-2));
       this.insertVisible = false;
     },
     startCodeEdit(){
@@ -209,6 +265,38 @@ const app = {
     },
     cancelLatex(){
       this.editLatex = false;
+    },
+    async doneCode(){
+      if(this.editingCode){
+        this.curEditMessage.content = this.codeInput;
+        this.curEditMessage.language = this.codeLanguage;
+      }else{
+      const message = {
+        type: 'Code',
+        content: this.codeInput,
+        language: this.codeLanguage,
+      }
+      if (this.privateMessaging) {
+        message.bto = [this.recipient]
+        message.context = [this.$gf.me, this.recipient]
+      } else {
+        message.context = [this.channel]
+      }
+
+      // Send!
+      this.$gf.post(message);
+    }
+      this.codeInput = '';
+
+      this.editCode = false;
+      this.editingCode = false;
+      this.curEditMessage = null;
+      document.querySelector("#text_input").focus();
+    },
+    cancelCode(){
+      this.editingCode = false;
+      this.curEditMessage = null;
+      this.editCode = false;
     },
     getDate(dateString){
       const date = new Date(Date.parse(dateString));
@@ -275,10 +363,21 @@ const app = {
       this.deleteId = message.id;
     },
     startEditMessage(message) {
+
+      if(message.type == 'Code'){
+        this.editingCode = true;
+        this.curEditMessage = message;
+        this.startCodeEdit();
+      }else{
+      if(this.editID === message.id){
+        this.editID = '';
+        this.editText = '';
+      }else{
       // Mark which message we're editing
       this.editID = message.id
       // And copy over it's existing text
-      this.editText = message.content
+      this.editText = message.content;}
+      }
     },
 
     saveEditMessage(message) {
@@ -292,6 +391,7 @@ const app = {
     /////////////////////////////
     // Problem 1 solution
     async setUsername() {
+      this.editUsername=  false;
       try {
         this.usernameResult = await this.resolver.requestUsername(this.preferredUsername)
         this.myUsername = this.preferredUsername
@@ -306,6 +406,7 @@ const app = {
     async chatWithUser() {
       this.recipient = await this.resolver.usernameToActor(this.recipientUsernameSearch)
       this.recipientUsername = this.recipientUsernameSearch
+      if(!this.recipient) this.searchFailed = true; else this.searchFailed = false;
     },
     /////////////////////////////
 
@@ -434,6 +535,15 @@ const ReadReceipts = {
     const { objects: readsRaw } = $gf.useObjects([messageid]);
     return { readsRaw };
   },
+  async mounted() {
+    if (!(this.readActors.includes(this.$gf.me))) {
+      this.$gf.post({
+        type: 'Read',
+        object: this.messageid,
+        context: [this.messageid]
+      })
+    }
+  },
   created() {
     this.resolver = new Resolver(this.$gf)
   },
@@ -468,6 +578,18 @@ const ReadReceipts = {
     },
     readUsernames(){
       return this.readActors.map((actor) => this.$actorsToUsernames.value[actor] ?? '');
+    },
+    myReads() {
+      return this.reads.filter(r=>r.actor==this.$gf.me)
+    },
+  },
+  watch: {
+    // In case we accidentally "read" more than once.
+    myReads(myReads) {
+      if (myReads.length > 1) {
+        // Remove all but one
+        this.$gf.remove(...myReads.slice(1))
+      }
     }
   },
   template: '#read_receipts',
